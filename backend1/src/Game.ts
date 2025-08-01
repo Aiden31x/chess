@@ -45,7 +45,7 @@ export class Game {
             return
         }
 
-        console.log("Did not early return")
+        console.log("Did not early return");
 
         
 

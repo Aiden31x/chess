@@ -1,6 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GAME_OVER = exports.MOVE = exports.INIT_GAME = void 0;
+exports.CONNECTION_ERROR = exports.NOT_YOUR_TURN = exports.GAME_NOT_FOUND = exports.INVALID_MOVE = exports.ERROR = exports.GAME_OVER = exports.MOVE = exports.INIT_GAME = void 0;
 exports.INIT_GAME = "init_game";
 exports.MOVE = "move";
-exports.GAME_OVER = "game over";
+exports.GAME_OVER = "game_over";
+exports.ERROR = "error";
+exports.INVALID_MOVE = "invalid_move";
+exports.GAME_NOT_FOUND = "game_not_found";
+exports.NOT_YOUR_TURN = "not_your_turn";
+exports.CONNECTION_ERROR = "connection_error";
