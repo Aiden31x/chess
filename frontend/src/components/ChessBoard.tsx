@@ -1,16 +1,16 @@
-import { type Color, type PieceSymbol, type Square } from "chess.js";
+import { type Color, type PieceSymbol, type Square, Chess } from "chess.js";
 import { useState } from "react";
 
 const unicodePieceMap: Record<string, string> = {
-  pw: "♙", pb: "♟",
-  rw: "♖", rb: "♜",
-  nw: "♘", nb: "♞",
-  bw: "♗", bb: "♝",
-  qw: "♕", qb: "♛",
-  kw: "♔", kb: "♚"
+  pb: "♙", pw: "♟",
+  rb: "♖", rw: "♜",
+  nb: "♘", nw: "♞",
+  bb: "♗", bw: "♝",
+  qb: "♕", qw: "♛",
+  kb: "♔", kw: "♚"
 };
 
-export const ChessBoard = ({ chess, board, socket, setBoard }: {
+export const ChessBoard = ({ chess, board, socket, setBoard, onError }: {
 
   chess: any;
   setBoard: any;
@@ -20,6 +20,7 @@ export const ChessBoard = ({ chess, board, socket, setBoard }: {
     color: Color;
   } | null)[][];
   socket: WebSocket;
+  onError?: (message: string) => void;
 }) => {
   const [from, setFrom] = useState<null | Square>(null);
 
@@ -33,24 +34,29 @@ export const ChessBoard = ({ chess, board, socket, setBoard }: {
             return (
               <div key={j} onClick={() => {
                 if (!from) {
-                  setFrom(squareRepresentation);
+                  // Check if the square has a piece before selecting
+                  if (square) {
+                    setFrom(squareRepresentation);
+                  } else if (onError) {
+                    onError("Please select a piece to move first!");
+                  }
                 } else {
+                  // Check if trying to move to the same square
+                  if (from === squareRepresentation) {
+                    setFrom(null);
+                    return;
+                  }
+
+                  // Send move to server for validation
+                  console.log(`Sending move to server: ${from} to ${squareRepresentation}`);
                   socket.send(JSON.stringify({
                     type: "move",
                     payload: {
                       from: from,
                       to: squareRepresentation
                     }
-                  })
-                  );
+                  }));
                   setFrom(null);
-                  chess.move({
-                    from,
-                    to: squareRepresentation
-                  });
-
-                  setBoard(chess.board());
-                  console.log("Move sent:", from, "to", squareRepresentation);
                 }
               }}
                 className={`w-16 h-16 flex items-center justify-center text-2xl font-bold cursor-pointer transition-all duration-200 ${(i + j) % 2 === 0 ? "bg-[#8f5f36]" : "bg-[#dcae83]"

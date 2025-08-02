@@ -6,11 +6,13 @@ const messages_1 = require("./messages");
 class Game {
     constructor(player1, player2) {
         this.moveCount = 0;
+        //instantiate the game with the two players and the board
         this.player1 = player1;
         this.player2 = player2;
         this.board = new chess_js_1.Chess();
         this.moves = [];
         this.startDate = new Date();
+        //send the initial game state to the players
         this.player1.send(JSON.stringify({
             type: messages_1.INIT_GAME,
             payload: {
@@ -24,26 +26,81 @@ class Game {
             }
         }));
     }
+    //checks if the player is making a valid move
+    isPlayerTurn(socket) {
+        const isWhitesTurn = this.moveCount % 2 === 0;
+        const isPlayer1Turn = isWhitesTurn && socket === this.player1;
+        const isPlayer2Turn = !isWhitesTurn && socket === this.player2;
+        console.log(`Move count: ${this.moveCount}, isWhitesTurn: ${isWhitesTurn}`);
+        console.log(`Player1 socket: ${this.player1}, Player2 socket: ${this.player2}`);
+        console.log(`Current socket: ${socket}`);
+        console.log(`Is player1 turn: ${isPlayer1Turn}, Is player2 turn: ${isPlayer2Turn}`);
+        return isPlayer1Turn || isPlayer2Turn;
+    }
     makeMove(socket, move) {
-        //VALIDATION using zod for input types\
-        if (this.moveCount % 2 === 0 && socket !== this.player1) {
+        console.log(`\n=== MOVE ATTEMPT ===`);
+        console.log(`Move: ${move.from} to ${move.to}`);
+        console.log(`Current move count: ${this.moveCount}`);
+        //checking whose turn it is
+        if (!this.isPlayerTurn(socket)) {
+            console.log("Invalid move: Not your turn");
+            // Send error message to the player who tried to move out of turn
+            socket.send(JSON.stringify({
+                type: "ERROR",
+                payload: {
+                    message: "It's not your turn! Please wait for your opponent to move."
+                }
+            }));
             return;
         }
-        if (this.moveCount % 2 === 1 && socket !== this.player2) {
-            return;
-        }
-        console.log("Did not early return");
+        console.log("Valid turn, attempting move");
         //UPDATE BOARD
         //chess.js library makes sure the move is valid 
         try {
-            this.board.move(move);
+            const result = this.board.move(move);
+            if (!result) {
+                console.log("Invalid move: chess.js rejected the move");
+                // Send error message for invalid move
+                socket.send(JSON.stringify({
+                    type: "ERROR",
+                    payload: {
+                        message: "Invalid move! This move is not allowed in chess."
+                    }
+                }));
+                return;
+            }
         }
         catch (e) {
-            console.log(e);
+            console.log("Move failed:", e);
+            // Send error message for move failure
+            socket.send(JSON.stringify({
+                type: "ERROR",
+                payload: {
+                    message: "Move failed! Please try a different move."
+                }
+            }));
+            return;
         }
-        console.log("Move is made");
+        console.log("Move is made successfully");
         // INCREMENT MOVE COUNT AFTER SUCCESSFUL MOVE
         this.moveCount++;
+        console.log(`Move count incremented to: ${this.moveCount}`);
+        // SEND UPDATED BOARD STATE TO BOTH PLAYERS
+        const boardState = this.board.board();
+        this.player1.send(JSON.stringify({
+            type: messages_1.BOARD_UPDATE,
+            payload: {
+                board: boardState,
+                turn: this.board.turn()
+            }
+        }));
+        this.player2.send(JSON.stringify({
+            type: messages_1.BOARD_UPDATE,
+            payload: {
+                board: boardState,
+                turn: this.board.turn()
+            }
+        }));
         //CHECKS IF GAME  IS OVER 
         if (this.board.isGameOver()) {
             this.player1.send(JSON.stringify({
