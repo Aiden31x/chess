@@ -19,9 +19,7 @@ A real-time multiplayer chess game built with React, TypeScript, Node.js, and We
 - **🔍 Move Highlighting**: Visual feedback for selected pieces and valid moves
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
 
-## 🚀 Live Demo
 
-[Play Online Chess](http://your-deployment-url.com)
 
 ## 🛠️ Tech Stack
 
@@ -48,7 +46,7 @@ A real-time multiplayer chess game built with React, TypeScript, Node.js, and We
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/chess-game.git
+   git clone https://github.com/Aiden31x/chess
    cd chess-game
    ```
 
