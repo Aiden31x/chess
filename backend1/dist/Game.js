@@ -37,6 +37,45 @@ class Game {
         console.log(`Is player1 turn: ${isPlayer1Turn}, Is player2 turn: ${isPlayer2Turn}`);
         return isPlayer1Turn || isPlayer2Turn;
     }
+    // Get valid moves for a given square
+    getValidMoves(square) {
+        try {
+            const moves = this.board.moves({ square: square });
+            console.log(`Raw moves for ${square}:`, moves);
+            // Convert chess notation to destination squares
+            return moves.map(move => {
+                // Handle different move formats:
+                // 'Na3' -> 'a3' (knight move)
+                // 'O-O' -> 'g1' or 'g8' (castling)
+                // 'e4' -> 'e4' (pawn move)
+                // 'exd5' -> 'd5' (capture)
+                if (move === 'O-O') {
+                    // Kingside castling
+                    return square[1] === '1' ? 'g1' : 'g8';
+                }
+                else if (move === 'O-O-O') {
+                    // Queenside castling
+                    return square[1] === '1' ? 'c1' : 'c8';
+                }
+                else if (move.includes('=')) {
+                    // Pawn promotion, extract destination
+                    return move.split('=')[0].slice(-2);
+                }
+                else if (move.includes('x')) {
+                    // Capture, extract destination
+                    return move.split('x')[1].slice(0, 2);
+                }
+                else {
+                    // Regular move, extract destination
+                    return move.slice(-2);
+                }
+            });
+        }
+        catch (error) {
+            console.log(`Error getting valid moves for square ${square}:`, error);
+            return [];
+        }
+    }
     makeMove(socket, move) {
         console.log(`\n=== MOVE ATTEMPT ===`);
         console.log(`Move: ${move.from} to ${move.to}`);

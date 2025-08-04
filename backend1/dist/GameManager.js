@@ -38,6 +38,21 @@ class GameManager {
                     game.makeMove(socket, message.payload);
                 }
             }
+            if (message.type === messages_1.GET_VALID_MOVES) {
+                console.log("get valid moves message received");
+                const game = this.games.find(game => game.player1 === socket || game.player2 === socket);
+                if (game) {
+                    const { square } = message.payload;
+                    const validMoves = game.getValidMoves(square);
+                    socket.send(JSON.stringify({
+                        type: "VALID_MOVES_RESPONSE",
+                        payload: {
+                            square: square,
+                            moves: validMoves
+                        }
+                    }));
+                }
+            }
         });
     }
 }

@@ -1,5 +1,5 @@
 import { WebSocket } from "ws";
-import { INIT_GAME, MOVE } from "./messages";
+import { INIT_GAME, MOVE, GET_VALID_MOVES } from "./messages";
 import { Game } from "./Game";
 
 
@@ -47,7 +47,22 @@ export class GameManager {
                     console.log("inside make move function")
                     game.makeMove(socket, message.payload)
                 }
+            }
 
+            if (message.type === GET_VALID_MOVES) {
+                console.log("get valid moves message received")
+                const game = this.games.find(game => game.player1 === socket || game.player2 === socket);
+                if (game) {
+                    const { square } = message.payload;
+                    const validMoves = game.getValidMoves(square);
+                    socket.send(JSON.stringify({
+                        type: "VALID_MOVES_RESPONSE",
+                        payload: {
+                            square: square,
+                            moves: validMoves
+                        }
+                    }));
+                }
             }
 
 

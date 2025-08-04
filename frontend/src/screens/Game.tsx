@@ -5,11 +5,14 @@ import { Warning } from "../components/Warning"
 import { useSocket } from "../hooks/useSocket"
 import { useEffect, useRef, useState } from "react"
 import { Chess } from "chess.js"
+import { UserTurn } from "../components/UserTurn"
 
 export const INIT_GAME = "init_game";
 export const MOVE = "move";
 export const GAME_OVER = "game_over";
 export const BOARD_UPDATE = "BOARD_UPDATE";
+export const GET_VALID_MOVES = "GET_VALID_MOVES";
+export const VALID_MOVES_RESPONSE = "VALID_MOVES_RESPONSE";
 export const ERROR = "ERROR";
 
 export const Game = () => {
@@ -20,6 +23,8 @@ export const Game = () => {
     const [chess, setChess] = useState(new Chess());
     const [board, setBoard] = useState(chess.board());
     const [warning, setWarning] = useState({ message: "", isVisible: false });
+    const [validMoves, setValidMoves] = useState<string[]>([]);
+    const [turn, setTurn] = useState<'w' | 'b'>('w');
 
     useEffect(() => {
         if (!socket) {
@@ -39,8 +44,10 @@ export const Game = () => {
                 case BOARD_UPDATE:
                     {
                         const { board: newBoard, turn } = message.payload;
+                        const newTurn = message.payload.turn;
                         setBoard(newBoard);
                         console.log("Board updated, current turn:", turn);
+                        setTurn(newTurn);
                     }
                     break;
 
@@ -64,6 +71,14 @@ export const Game = () => {
                         console.log("Error received:", errorMessage);
                     }
                     break;
+
+                case VALID_MOVES_RESPONSE:
+                    {
+                        const { moves } = message.payload;
+                        setValidMoves(moves);
+                        console.log("Valid moves received:", moves);
+                    }
+                    break;
             }
         }
     })
@@ -71,6 +86,15 @@ export const Game = () => {
 
     const closeWarning = () => {
         setWarning({ message: "", isVisible: false });
+    };
+
+    const requestValidMoves = (square: string) => {
+        if (socket) {
+            socket.send(JSON.stringify({
+                type: GET_VALID_MOVES,
+                payload: { square }
+            }));
+        }
     };
 
     if (!socket) {
@@ -94,6 +118,9 @@ export const Game = () => {
                             board={board}
                             socket={socket}
                             setBoard={setBoard}
+                            validMoves={validMoves}
+                            setValidMoves={setValidMoves}
+                            onRequestValidMoves={requestValidMoves}
                             onError={(message) => setWarning({ message, isVisible: true })}
                         />
                     </div>
@@ -106,7 +133,7 @@ export const Game = () => {
                             }}>Play
 
                             </Button>
-
+                            <UserTurn user={turn} />
                         </div>
 
                     </div>

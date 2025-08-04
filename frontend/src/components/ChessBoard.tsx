@@ -10,7 +10,7 @@ const unicodePieceMap: Record<string, string> = {
   kb: "♔", kw: "♚"
 };
 
-export const ChessBoard = ({ chess, board, socket, setBoard, onError }: {
+export const ChessBoard = ({ chess, board, socket, setBoard, validMoves, setValidMoves, onRequestValidMoves, onError }: {
 
   chess: any;
   setBoard: any;
@@ -20,6 +20,9 @@ export const ChessBoard = ({ chess, board, socket, setBoard, onError }: {
     color: Color;
   } | null)[][];
   socket: WebSocket;
+  validMoves: string[];
+  setValidMoves: (moves: string[]) => void;
+  onRequestValidMoves: (square: string) => void;
   onError?: (message: string) => void;
 }) => {
   const [from, setFrom] = useState<null | Square>(null);
@@ -37,6 +40,9 @@ export const ChessBoard = ({ chess, board, socket, setBoard, onError }: {
                   // Check if the square has a piece before selecting
                   if (square) {
                     setFrom(squareRepresentation);
+                    // Clear previous valid moves and request new ones
+                    setValidMoves([]);
+                    onRequestValidMoves(squareRepresentation);
                   } else if (onError) {
                     onError("Please select a piece to move first!");
                   }
@@ -57,12 +63,23 @@ export const ChessBoard = ({ chess, board, socket, setBoard, onError }: {
                     }
                   }));
                   setFrom(null);
+                  // Clear valid moves after making a move
+                  setValidMoves([]);
                 }
               }}
-                className={`w-16 h-16 flex items-center justify-center text-2xl font-bold cursor-pointer transition-all duration-200 ${(i + j) % 2 === 0 ? "bg-[#8f5f36]" : "bg-[#dcae83]"
+                className={`w-16 h-16 flex items-center justify-center text-2xl font-bold cursor-pointer transition-all duration-200 ${validMoves.includes(squareRepresentation)
+                  ? "bg-gray-300 bg-opacity-50"
+                  : (i + j) % 2 === 0 ? "bg-[#8f5f36]" : "bg-[#dcae83]"
                   } ${from === squareRepresentation ? "ring-4 ring-yellow-400 ring-opacity-75 shadow-lg" : ""
                   } ${square && from === squareRepresentation ? "scale-110" : ""
+                  } ${validMoves.includes(squareRepresentation) ? "ring-4 ring-neutral-500 ring-opacity-100 shadow-xl" : ""
                   }`}
+                // Debug logging
+                onMouseEnter={() => {
+                  if (validMoves.length > 0) {
+                    console.log(`Square: ${squareRepresentation}, Valid moves: ${validMoves}, Includes: ${validMoves.includes(squareRepresentation)}`);
+                  }
+                }}
                 style={{ fontFamily: "'Segoe UI Symbol', 'Arial Unicode MS', Arial, sans-serif" }}
               >
                 {square ? unicodePieceMap[square.type + square.color] : ""}
