@@ -53,6 +53,14 @@ class GameManager {
                     }));
                 }
             }
+            if (message.type === messages_1.PAWN_PROMOTION) {
+                console.log("pawn promotion message received");
+                const game = this.games.find(game => game.player1 === socket || game.player2 === socket);
+                if (game) {
+                    const { from, to, promotion } = message.payload;
+                    game.promotePawn(socket, from, to, promotion);
+                }
+            }
         });
     }
 }

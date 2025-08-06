@@ -2,6 +2,7 @@
 import { Button } from "../components/Button"
 import { ChessBoard } from "../components/ChessBoard"
 import { Warning } from "../components/Warning"
+import { PromotionModal } from "../components/PromotionModal"
 import { useSocket } from "../hooks/useSocket"
 import { useEffect, useRef, useState } from "react"
 import { Chess } from "chess.js"
@@ -13,6 +14,8 @@ export const GAME_OVER = "game_over";
 export const BOARD_UPDATE = "BOARD_UPDATE";
 export const GET_VALID_MOVES = "GET_VALID_MOVES";
 export const VALID_MOVES_RESPONSE = "VALID_MOVES_RESPONSE";
+export const PAWN_PROMOTION = "PAWN_PROMOTION";
+export const PROMOTION_REQUIRED = "PROMOTION_REQUIRED";
 export const ERROR = "ERROR";
 
 export const Game = () => {
@@ -24,6 +27,12 @@ export const Game = () => {
     const [board, setBoard] = useState(chess.board());
     const [warning, setWarning] = useState({ message: "", isVisible: false });
     const [validMoves, setValidMoves] = useState<string[]>([]);
+    const [promotionModal, setPromotionModal] = useState({
+        isVisible: false,
+        from: '',
+        to: '',
+        color: 'white' as 'white' | 'black'
+    });
     const [turn, setTurn] = useState<'w' | 'b'>('w');
 
     useEffect(() => {
@@ -79,6 +88,21 @@ export const Game = () => {
                         console.log("Valid moves received:", moves);
                     }
                     break;
+
+                case PROMOTION_REQUIRED:
+                    {
+                        const { from, to } = message.payload;
+                        // Determine color based on current turn
+                        const currentTurn = chesss.current.turn();
+                        setPromotionModal({
+                            isVisible: true,
+                            from,
+                            to,
+                            color: currentTurn === 'w' ? 'white' : 'black'
+                        });
+                        console.log("Promotion required:", from, "to", to);
+                    }
+                    break;
             }
         }
     })
@@ -97,6 +121,27 @@ export const Game = () => {
         }
     };
 
+    const handlePromotion = (piece: 'q' | 'r' | 'b' | 'n') => {
+        if (socket && promotionModal.isVisible) {
+            socket.send(JSON.stringify({
+                type: PAWN_PROMOTION,
+                payload: {
+                    from: promotionModal.from,
+                    to: promotionModal.to,
+                    promotion: piece
+                }
+            }));
+
+            // Close the modal
+            setPromotionModal({
+                isVisible: false,
+                from: '',
+                to: '',
+                color: 'white'
+            });
+        }
+    };
+
     if (!socket) {
         return <div>
             Loadinggg........
@@ -109,6 +154,11 @@ export const Game = () => {
                 message={warning.message}
                 isVisible={warning.isVisible}
                 onClose={closeWarning}
+            />
+            <PromotionModal
+                isVisible={promotionModal.isVisible}
+                color={promotionModal.color}
+                onPromote={handlePromotion}
             />
             <div className="pt-8 max-w-screen-lg w-full">
                 <div className="grid grid-cols-6 gap-4 w-full ">

@@ -76,6 +76,108 @@ class Game {
             return [];
         }
     }
+    // Check if a move requires pawn promotion
+    requiresPromotion(from, to) {
+        const piece = this.board.get(from);
+        if (!piece || piece.type !== 'p')
+            return false;
+        const toRank = parseInt(to[1]);
+        return (piece.color === 'w' && toRank === 8) || (piece.color === 'b' && toRank === 1);
+    }
+    // Handle pawn promotion
+    promotePawn(socket, from, to, promotion) {
+        console.log(`Promoting pawn from ${from} to ${to} as ${promotion}`);
+        // Validate promotion piece
+        if (!['q', 'r', 'b', 'n'].includes(promotion.toLowerCase())) {
+            socket.send(JSON.stringify({
+                type: "ERROR",
+                payload: {
+                    message: "Invalid promotion piece! Choose Queen, Rook, Bishop, or Knight."
+                }
+            }));
+            return;
+        }
+        try {
+            const result = this.board.move({
+                from: from,
+                to: to,
+                promotion: promotion.toLowerCase()
+            });
+            if (!result) {
+                socket.send(JSON.stringify({
+                    type: "ERROR",
+                    payload: {
+                        message: "Invalid promotion move!"
+                    }
+                }));
+                return;
+            }
+            console.log("Promotion successful");
+            this.moveCount++;
+            this.sendBoardUpdate();
+            this.checkGameOver();
+            this.sendMoveToOtherPlayer(socket, { from, to, promotion });
+        }
+        catch (error) {
+            console.log("Promotion failed:", error);
+            socket.send(JSON.stringify({
+                type: "ERROR",
+                payload: {
+                    message: "Promotion failed! Please try again."
+                }
+            }));
+        }
+    }
+    // Extract board update logic to reusable method
+    sendBoardUpdate() {
+        const boardState = this.board.board();
+        this.player1.send(JSON.stringify({
+            type: messages_1.BOARD_UPDATE,
+            payload: {
+                board: boardState,
+                turn: this.board.turn()
+            }
+        }));
+        this.player2.send(JSON.stringify({
+            type: messages_1.BOARD_UPDATE,
+            payload: {
+                board: boardState,
+                turn: this.board.turn()
+            }
+        }));
+    }
+    // Extract game over check to reusable method
+    checkGameOver() {
+        if (this.board.isGameOver()) {
+            this.player1.send(JSON.stringify({
+                type: messages_1.GAME_OVER,
+                payload: {
+                    winner: this.board.turn() === "w" ? "black" : "white"
+                }
+            }));
+            this.player2.send(JSON.stringify({
+                type: messages_1.GAME_OVER,
+                payload: {
+                    winner: this.board.turn() === "w" ? "black" : "white"
+                }
+            }));
+        }
+    }
+    // Extract move sending logic
+    sendMoveToOtherPlayer(socket, move) {
+        if (socket === this.player1) {
+            this.player2.send(JSON.stringify({
+                type: messages_1.MOVE,
+                payload: move
+            }));
+        }
+        else {
+            this.player1.send(JSON.stringify({
+                type: messages_1.MOVE,
+                payload: move
+            }));
+        }
+    }
     makeMove(socket, move) {
         console.log(`\n=== MOVE ATTEMPT ===`);
         console.log(`Move: ${move.from} to ${move.to}`);
@@ -93,6 +195,18 @@ class Game {
             return;
         }
         console.log("Valid turn, attempting move");
+        // Check if this move requires pawn promotion
+        if (this.requiresPromotion(move.from, move.to)) {
+            console.log("Pawn promotion required");
+            socket.send(JSON.stringify({
+                type: messages_1.PROMOTION_REQUIRED,
+                payload: {
+                    from: move.from,
+                    to: move.to
+                }
+            }));
+            return;
+        }
         //UPDATE BOARD
         //chess.js library makes sure the move is valid 
         try {
@@ -124,53 +238,10 @@ class Game {
         // INCREMENT MOVE COUNT AFTER SUCCESSFUL MOVE
         this.moveCount++;
         console.log(`Move count incremented to: ${this.moveCount}`);
-        // SEND UPDATED BOARD STATE TO BOTH PLAYERS
-        const boardState = this.board.board();
-        this.player1.send(JSON.stringify({
-            type: messages_1.BOARD_UPDATE,
-            payload: {
-                board: boardState,
-                turn: this.board.turn()
-            }
-        }));
-        this.player2.send(JSON.stringify({
-            type: messages_1.BOARD_UPDATE,
-            payload: {
-                board: boardState,
-                turn: this.board.turn()
-            }
-        }));
-        //CHECKS IF GAME  IS OVER 
-        if (this.board.isGameOver()) {
-            this.player1.send(JSON.stringify({
-                type: messages_1.GAME_OVER,
-                payload: {
-                    winner: this.board.turn() === "w" ? "black" : "white"
-                }
-            }));
-            this.player2.send(JSON.stringify({
-                type: messages_1.GAME_OVER,
-                payload: {
-                    winner: this.board.turn() === "w" ? "black" : "white"
-                }
-            }));
-            return;
-        }
-        // SEND MOVE TO THE OTHER PLAYER
-        if (socket === this.player1) {
-            // If player1 (white) made the move, send to player2 (black)
-            this.player2.send(JSON.stringify({
-                type: messages_1.MOVE,
-                payload: move
-            }));
-        }
-        else {
-            // If player2 (black) made the move, send to player1 (white)
-            this.player1.send(JSON.stringify({
-                type: messages_1.MOVE,
-                payload: move
-            }));
-        }
+        // Send updates using helper methods
+        this.sendBoardUpdate();
+        this.checkGameOver();
+        this.sendMoveToOtherPlayer(socket, move);
     }
 }
 exports.Game = Game;

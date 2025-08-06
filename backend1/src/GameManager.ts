@@ -1,5 +1,5 @@
 import { WebSocket } from "ws";
-import { INIT_GAME, MOVE, GET_VALID_MOVES } from "./messages";
+import { INIT_GAME, MOVE, GET_VALID_MOVES, PAWN_PROMOTION } from "./messages";
 import { Game } from "./Game";
 
 
@@ -62,6 +62,15 @@ export class GameManager {
                             moves: validMoves
                         }
                     }));
+                }
+            }
+
+            if (message.type === PAWN_PROMOTION) {
+                console.log("pawn promotion message received")
+                const game = this.games.find(game => game.player1 === socket || game.player2 === socket);
+                if (game) {
+                    const { from, to, promotion } = message.payload;
+                    game.promotePawn(socket, from, to, promotion);
                 }
             }
 

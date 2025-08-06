@@ -1,12 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CONNECTION_ERROR = exports.NOT_YOUR_TURN = exports.GAME_NOT_FOUND = exports.INVALID_MOVE = exports.ERROR = exports.VALID_MOVES_RESPONSE = exports.GET_VALID_MOVES = exports.BOARD_UPDATE = exports.GAME_OVER = exports.MOVE = exports.INIT_GAME = void 0;
+exports.CONNECTION_ERROR = exports.NOT_YOUR_TURN = exports.GAME_NOT_FOUND = exports.INVALID_MOVE = exports.ERROR = exports.PROMOTION_REQUIRED = exports.PAWN_PROMOTION = exports.VALID_MOVES_RESPONSE = exports.GET_VALID_MOVES = exports.BOARD_UPDATE = exports.GAME_OVER = exports.MOVE = exports.INIT_GAME = void 0;
 exports.INIT_GAME = "init_game";
 exports.MOVE = "move";
 exports.GAME_OVER = "game_over";
 exports.BOARD_UPDATE = "BOARD_UPDATE";
 exports.GET_VALID_MOVES = "GET_VALID_MOVES";
 exports.VALID_MOVES_RESPONSE = "VALID_MOVES_RESPONSE";
+exports.PAWN_PROMOTION = "PAWN_PROMOTION";
+exports.PROMOTION_REQUIRED = "PROMOTION_REQUIRED";
 exports.ERROR = "error";
 exports.INVALID_MOVE = "invalid_move";
 exports.GAME_NOT_FOUND = "game_not_found";
